@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import logging
 import sys
 
@@ -11,10 +12,9 @@ momentum: MomentumClientManager
 proces_navn = "Fjern markering af borgere i udsatte boligområder"
 MARKERINGERSNAVNE = [ "JP Vollsmose gruppe 1", "JP Vollsmose gruppe 2", "JP Vollsmose gruppe 3",
                      "JP KSE gruppe 1", "JP KSE gruppe 2", "JP KSE gruppe 3"  ]
+
 async def populate_queue(workqueue: Workqueue):
     logger = logging.getLogger(__name__)
-
-    logger.info("Hello from populate workqueue!")
 
     # sætter filtre op til at finde alle andre end 6.1 & 6.2 borgere, der som har en af de 6 markeringer
     filters = [
@@ -45,7 +45,7 @@ async def populate_queue(workqueue: Workqueue):
         }
     ]   
     borgere = momentum.borgere.hent_borgere(filters=filters)
-    
+
     for borger in borgere["data"]:
         # Finder markering, der skal afsluttes.
         borgers_markeringer = borger["tags"]
@@ -57,21 +57,23 @@ async def populate_queue(workqueue: Workqueue):
         }
         workqueue.add_item(data=data, reference=borger["cpr"])
 
-
-
-
 async def process_workqueue(workqueue: Workqueue):
     logger = logging.getLogger(__name__)
 
-    logger.info("Hello from process workqueue!")
 
     for item in workqueue:
         with item:
             data = item.data  # Item data deserialized from json as dict
  
             try:
-                # Process the item here
-                pass
+                borger = momentum.borgere.hent_borger(data["cpr"])
+                borgers_markeringer = momentum.borgere.hent_markeringer(borger)
+                # Finder den markering, der skal afsluttes.
+                markering = next((markering for markering in borgers_markeringer if markering["tag"]["title"] == data["markering"] and markering["tag"]["end"] == None and markering["end"] == None), None)
+                if markering:
+                    momentum.borgere.afslut_markering(markering=markering, slut_dato=datetime.now())
+                    tracker.track_task(process_name=proces_navn)
+
             except WorkItemError as e:
                 # A WorkItemError represents a soft error that indicates the item should be passed to manual processing or a business logic fault
                 logger.error(f"Error processing item: {data}. Error: {e}")
@@ -83,7 +85,6 @@ if __name__ == "__main__":
     workqueue = ats.workqueue()
 
     # Initialize external systems for automation here..
-        # Initialize external systems for automation here..
     tracking_credential = Credential.get_credential("Odense SQL Server")
     momentum_credential = Credential.get_credential("Momentum - produktion")
     # momentum_credential = Credential.get_credential("Momentum - edu")
