@@ -10,13 +10,19 @@ from automation_server_client import AutomationServer, Workqueue, WorkItemError,
 tracker: Tracker
 momentum: MomentumClientManager
 proces_navn = "Fjern markering af borgere i udsatte boligområder"
-MARKERINGERSNAVNE = [ "JP Vollsmose gruppe 1", "JP Vollsmose gruppe 2", "JP Vollsmose gruppe 3",
-                     "JP KSE gruppe 1", "JP KSE gruppe 2", "JP KSE gruppe 3"  ]
+MARKERINGERSNAVNE = [
+    "JP Vollsmose gruppe 1",
+    "JP Vollsmose gruppe 2",
+    "JP Vollsmose gruppe 3",
+    "JP KSE gruppe 1",
+    "JP KSE gruppe 2",
+    "JP KSE gruppe 3"
+]
 
 async def populate_queue(workqueue: Workqueue):
     logger = logging.getLogger(__name__)
 
-    # sætter filtre op til at finde alle andre end 6.1 & 6.2 borgere, der som har en af de 6 markeringer
+    # sætter filtre op til at finde alle andre end 6.1 & 6.2 borgere, som har en af de 6 markeringer
     filters = [
         {
             "customFilter": "exclude",
@@ -87,7 +93,6 @@ if __name__ == "__main__":
     # Initialize external systems for automation here..
     tracking_credential = Credential.get_credential("Odense SQL Server")
     momentum_credential = Credential.get_credential("Momentum - produktion")
-    # momentum_credential = Credential.get_credential("Momentum - edu")
 
     tracker = Tracker(
         username=tracking_credential.username,
